@@ -1,0 +1,15 @@
+Easy Difficulty
+    10x8 board with 10 bombs
+Medium Difficulty
+    18x14 with 40 bombs
+Hard Difficulty
+    24x20 with 99 bombs
+
+to do:
+
+first click should always be on clear tile with a number of zero. Then set the bombs accordingly
+When clicking a tile with a number zero, clear all adjacent tiles to it
+add flagging mechanic
+add displays for time, number of bombs left
+add difficulty menu that resets game if changed
+find good colors to use
