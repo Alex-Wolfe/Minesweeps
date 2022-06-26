@@ -43,17 +43,18 @@ def main():
                         if tile.covered:
                             tile.Dig(display)
             else:
-                rect = mine_easy.get_rect()
+                rect = minemap[difficulty].get_rect()
                 rect.center = self.center
-                display.blit(picturemap[difficulty],rect)
+                display.blit(minemap[difficulty],rect)
 
         def Flag(self,display):
             if self.flagged:
                 self.flagged = False
             else:
                 self.flagged = True
-
-
+            rect = flagmap[difficulty].get_rect()
+            rect.center = self.center
+            display.blit(flagmap[difficulty],rect)
 
     # Define Functions
     def CreateWindow(windowsize,background):
@@ -134,11 +135,15 @@ def main():
     mine_easy = pygame.image.load('mine_easy.png')
     mine_med = pygame.image.load('mine_medium.png')
     mine_hard = pygame.image.load('mine_hard.png')
-    font = pygame.font.SysFont(None, 48)
+    flag_easy = pygame.image.load('flag_easy.png')
+    flag_med = pygame.image.load('flag_med.png')
+    flag_hard = pygame.image.load('flag_hard.png')
     headerheight = 100
     difficulty = 'easy'
-    picturemap = {'easy':mine_easy,'medium':mine_med,'hard':mine_hard}
-    tilesizemap = {'easy':40,'medium':30,'hard':25}       # bomb pic size should go 30, 25, 20
+    fontmap = {'easy':48,'medium':38,'hard':30}
+    minemap = {'easy':mine_easy,'medium':mine_med,'hard':mine_hard}
+    flagmap = {'easy':flag_easy,'medium':flag_med,'hard':flag_hard}
+    tilesizemap = {'easy':40,'medium':30,'hard':25} 
     numbombsmap = {'easy':10,'medium':40,'hard':99}
     numbombs = numbombsmap[difficulty]
     tilesize = tilesizemap[difficulty]
@@ -150,7 +155,9 @@ def main():
     clock = pygame.time.Clock()
     tiles = CreateTiles(tilesize,boardarray,display)
     DrawHeader(display)
+    font = pygame.font.SysFont(None, fontmap[difficulty])
 
+    # First while loop is for first click only, after which bombs are set and main game loop is entered
     breakflag = False
     while True:
         for event in pygame.event.get():
@@ -181,8 +188,8 @@ def main():
             break
         pygame.display.update()
         clock.tick(60)
-
-
+        
+    # Main game loop
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -200,14 +207,10 @@ def main():
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     if tiles[row][col].covered:
                         tiles[row][col].Flag(display)
-
-
         pygame.display.update()
         clock.tick(60)
         
     
-
-
 
 
 if __name__ == '__main__':

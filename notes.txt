@@ -5,18 +5,22 @@ Medium Difficulty
 Hard Difficulty
     24x20 with 99 bombs
 
+
 to do:
 
-add game over when bomb is dug
-add flagging mechanic
+add game over when mine is dug
 add displays for time, number of bombs left
 add difficulty menu that resets game if changed
 find good colors to use
 
+
 completed: 
+
 calculate number of adjacent mines for each tile
 write adjacent function that returns list of adjacent tiles to a selected tile
 add digging mechanic
 after first click, set the bombs so that the selected tile and adjacent tiles are clear and have no adjacent mines
 when digging a clear tile with no adjacent mines, dig all adjacent tiles also
 add picture for bombs
+fixed font size and mine picture size issue
+added basic flagging
