@@ -12,6 +12,7 @@ def main():
     class Tile():
         def __init__(self,pos,color,tilesize,display):
             self.covered = True
+            self.flagged = False
             self.mine = False
             self.adjacentmines = 0
             self.row = pos[0]
@@ -36,12 +37,22 @@ def main():
                     rect = number.get_rect()
                     rect.center = self.center
                     display.blit(number,rect)
-            
+                else:
+                    adjacent = getAdjacent(self,tiles)
+                    for tile in adjacent:
+                        if tile.covered:
+                            tile.Dig(display)
             else:
-                minesym = font.render('b',True,(0,0,0))
-                rect = minesym.get_rect()
+                rect = mine_easy.get_rect()
                 rect.center = self.center
-                display.blit(minesym,rect)
+                display.blit(picturemap[difficulty],rect)
+
+        def Flag(self,display):
+            if self.flagged:
+                self.flagged = False
+            else:
+                self.flagged = True
+
 
 
     # Define Functions
@@ -68,51 +79,66 @@ def main():
         header = pygame.Rect(p1[0],p1[1],windowsize[0],headerheight)
         color = (255,255,0)
         pygame.draw.rect(display,color,header)
-    
-    def SetBombs(numbombs,tiles):
-        while numbombs:
-            col = random.randint(0,boardarray[0]-1)
-            row = random.randint(0,boardarray[1]-1)
-            if tiles[row][col].mine:
-                continue
-            tiles[row][col].mine = True
-            numbombs-=1
-
+        
     def GetClickCoords(x,y,tilesize):
         col = x//tilesize
         row = (y-headerheight)//tilesize
         return [int(row),int(col)]
+    
+    def SetBombs(numbombs,tiles,selected):
+        while numbombs:
+            col = random.randint(0,boardarray[0]-1)
+            row = random.randint(0,boardarray[1]-1)
+            if tiles[row][col].mine or tiles[row][col] == selected or tiles[row][col] in getAdjacent(selected,tiles):
+                continue
+            tiles[row][col].mine = True
+            numbombs-=1
+
+    # Returns list of tiles that are adjacent to the selected tile
+    def getAdjacent(selected,tiles):
+        row = selected.row
+        col = selected.col
+        adjacent = []
+        if row < boardarray[1]-1:
+            adjacent.append(tiles[row+1][col])
+            if col < boardarray[0]-1:
+                adjacent.append(tiles[row+1][col+1])
+            if col:
+                adjacent.append(tiles[row+1][col-1])
+        if row:
+            adjacent.append(tiles[row-1][col])
+            if col < boardarray[0]-1:
+                adjacent.append(tiles[row-1][col+1])
+            if col:
+                adjacent.append(tiles[row-1][col-1])
+        if col < boardarray[0]-1:
+            adjacent.append(tiles[row][col+1])
+        if col:
+            adjacent.append(tiles[row][col-1])
+        return adjacent
 
     def CalculateTileNumbers(tiles):
         for k in range(len(tiles)):
             for j in range(len(tiles[k])):
                 if not tiles[k][j].mine:
                     continue
-                if k < boardarray[1]-1:
-                    tiles[k+1][j].adjacentmines+=1
-                    if j < boardarray[0]-1:
-                        tiles[k+1][j+1].adjacentmines+=1
-                        tiles[k][j+1].adjacentmines+=1
-                    if j > 0:
-                        tiles[k+1][j-1].adjacentmines+=1
-                        tiles[k][j-1].adjacentmines+=1
-                if k > 0:
-                    tiles[k-1][j].adjacentmines+=1
-                    if j < boardarray[0]-1:
-                        tiles[k-1][j+1].adjacentmines+=1
-                    if j > 0:
-                        tiles[k-1][j-1].adjacentmines+=1
-
+                adjacent = getAdjacent(tiles[k][j],tiles)
+                for tile in adjacent:
+                    tile.adjacentmines+=1
 
 
     # Main game setup
     pygame.mixer.pre_init(44100, -16, 2, 2048)
     pygame.mixer.init()
     pygame.init()
+    mine_easy = pygame.image.load('mine_easy.png')
+    mine_med = pygame.image.load('mine_medium.png')
+    mine_hard = pygame.image.load('mine_hard.png')
     font = pygame.font.SysFont(None, 48)
     headerheight = 100
     difficulty = 'easy'
-    tilesizemap = {'easy':40,'medium':30,'hard':25}
+    picturemap = {'easy':mine_easy,'medium':mine_med,'hard':mine_hard}
+    tilesizemap = {'easy':40,'medium':30,'hard':25}       # bomb pic size should go 30, 25, 20
     numbombsmap = {'easy':10,'medium':40,'hard':99}
     numbombs = numbombsmap[difficulty]
     tilesize = tilesizemap[difficulty]
@@ -124,8 +150,8 @@ def main():
     clock = pygame.time.Clock()
     tiles = CreateTiles(tilesize,boardarray,display)
     DrawHeader(display)
-    SetBombs(numbombs,tiles)
-    CalculateTileNumbers(tiles)
+
+    breakflag = False
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -135,12 +161,45 @@ def main():
                 click = pygame.mouse.get_pos()
                 if mouse_presses[0]:
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
-                    tiles[row][col].Dig(display)
+                    selected = tiles[row][col]
+                    SetBombs(numbombs,tiles,selected)
+                    CalculateTileNumbers(tiles)
+                    selected.Dig(display)
+                    breakflag = True
+                    break
                 elif mouse_presses[1]:
                     pass
                 else:
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
-                    tiles[row][col].Dig(display)
+                    selected = tiles[row][col]
+                    SetBombs(numbombs,tiles,selected)
+                    CalculateTileNumbers(tiles)
+                    selected.Dig(display)
+                    breakflag = True
+                    break
+        if breakflag:
+            break
+        pygame.display.update()
+        clock.tick(60)
+
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_presses = pygame.mouse.get_pressed()
+                click = pygame.mouse.get_pos()
+                if mouse_presses[0]:
+                    [row,col] = GetClickCoords(click[0],click[1],tilesize)
+                    if not tiles[row][col].flagged:
+                        tiles[row][col].Dig(display)
+                elif mouse_presses[1]:
+                    pass
+                else:
+                    [row,col] = GetClickCoords(click[0],click[1],tilesize)
+                    if tiles[row][col].covered:
+                        tiles[row][col].Flag(display)
 
 
         pygame.display.update()
