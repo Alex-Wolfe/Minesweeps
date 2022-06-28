@@ -159,19 +159,97 @@ def main():
         return True
 
     def GameOver(display):
-        print('kaboom')
+        for set in tiles:
+            for tile in set:
+                if tile.mine:
+                    tile.Dig(display)
+        bg = pygame.Rect(windowsize[0]/5,windowsize[1]/5,3*windowsize[0]/5,3*windowsize[1]/5)
+        color = (76,153,0)
+        pygame.draw.rect(display,color,bg)
+        clockrect = clock_img.get_rect()
+        clockrect.center = (bg.topleft[0]+50,bg.topleft[1]+30)
+        display.blit(clock_img,clockrect)
+        trophyrect = trophy.get_rect()
+        trophyrect.center = (bg.topright[0]-50,bg.topright[1]+30)
+        display.blit(trophy,trophyrect)
+        time = headerfont.render('--',True,(0,0,0))
+        timerect = time.get_rect()
+        timerect.center = (clockrect.center[0],clockrect.center[1]+50)
+        display.blit(time,timerect)
+        recordfile = open('record.txt')
+        record = headerfont.render(str(recordfile.readline()),True,(0,0,0))
+        recordfile.close()
+        recordrect = record.get_rect()
+        recordrect.center = (trophyrect.center[0],trophyrect.center[1]+50)
+        display.blit(record,recordrect)
+        restartrect = restart.get_rect()
+        restartrect.center = (bg.center[0],bg.center[1]+windowsize[1]/6)
+        display.blit(restart,restartrect)
+        pygame.display.update()
+        wait = True
+        while wait:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_presses = pygame.mouse.get_pressed()
+                    click = pygame.mouse.get_pos()
+                    if mouse_presses[0]:
+                        if click[0]<restartrect.right and click[0]>restartrect.left and click[1]<restartrect.bottom and click[1]>restartrect.top:
+                            wait = False
+                    elif mouse_presses[1]:
+                        pass
+                    else:
+                        pass
 
-    def GameWin(display):
-        print('pog')
+    def GameWin(display,time):
+        bg = pygame.Rect(windowsize[0]/5,windowsize[1]/5,3*windowsize[0]/5,3*windowsize[1]/5)
+        color = (76,153,0)
+        pygame.draw.rect(display,color,bg)
+        clockrect = clock_img.get_rect()
+        clockrect.center = (bg.topleft[0]+50,bg.topleft[1]+30)
+        display.blit(clock_img,clockrect)
+        trophyrect = trophy.get_rect()
+        trophyrect.center = (bg.topright[0]-50,bg.topright[1]+30)
+        display.blit(trophy,trophyrect)
+        timedis = headerfont.render(str(time),True,(0,0,0))
+        timerect = timedis.get_rect()
+        timerect.center = (clockrect.center[0],clockrect.center[1]+50)
+        display.blit(timedis,timerect)
+        recordfile = open('record.txt')
+        record = headerfont.render(str(recordfile.readline()),True,(0,0,0))
+        recordfile.close()
+        recordrect = record.get_rect()
+        recordrect.center = (trophyrect.center[0],trophyrect.center[1]+50)
+        display.blit(record,recordrect)
+        restartrect = restart.get_rect()
+        restartrect.center = (bg.center[0],bg.center[1]+windowsize[1]/6)
+        display.blit(restart,restartrect)
+        pygame.display.update()
+        wait = True
+        while wait:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_presses = pygame.mouse.get_pressed()
+                    click = pygame.mouse.get_pos()
+                    if mouse_presses[0]:
+                        if click[0]<restartrect.right and click[0]>restartrect.left and click[1]<restartrect.bottom and click[1]>restartrect.top:
+                            wait = False
+                    elif mouse_presses[1]:
+                        pass
+                    else:
+                        pass
 
-    def StartGame():
-        difficulty = 'easy'
-        fontmap = {'easy':48,'medium':38,'hard':30}
-        minemap = {'easy':mine_easy,'medium':mine_med,'hard':mine_hard}
-        flagmap = {'easy':flag_easy,'medium':flag_med,'hard':flag_hard}
-        tilesizemap = {'easy':40,'medium':30,'hard':25} 
-        numminesmap = {'easy':10,'medium':40,'hard':99}
-        boardarraymap = {'easy':[10,8],'medium':[18,14],'hard':[24,20]}
+    # function used to reset game in case of loss, win, or difficulty change
+    def StartGame(difficulty):
+        fontmap = {'easy':48,'med':38,'hard':30}
+        minemap = {'easy':mine_easy,'med':mine_med,'hard':mine_hard}
+        flagmap = {'easy':flag_easy,'med':flag_med,'hard':flag_hard}
+        tilesizemap = {'easy':40,'med':30,'hard':25} 
+        numminesmap = {'easy':10,'med':40,'hard':99}
+        boardarraymap = {'easy':[10,8],'med':[18,14],'hard':[24,20]}
         nummines = numminesmap[difficulty]
         tilesize = tilesizemap[difficulty]
         boardarray = boardarraymap[difficulty]
@@ -185,6 +263,8 @@ def main():
         time = 0
         return [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,True]
 
+
+
     # Main game setup
     pygame.mixer.pre_init(44100, -16, 2, 2048)
     pygame.mixer.init()
@@ -197,12 +277,17 @@ def main():
     flag_hard = pygame.image.load('flag_hard.png')
     flag_header = pygame.image.load('flag_header.png')
     clock_img = pygame.image.load('clock.png')
+    trophy = pygame.image.load('trophy.png')
+    restart = pygame.image.load('try_again.png')
     headerfont = pygame.font.SysFont(None,50)
     headerheight = 70
-    [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,first]= StartGame()
+    difficulty = 'easy'
+    [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,first] = StartGame(difficulty)
     UpdateHeader(display)
+
     # Main game loop
     while True:
+        UpdateHeader(display)
         while first:
             # First while loop is for first click only, after which bombs are set and main game loop is entered
             for event in pygame.event.get():
@@ -241,6 +326,7 @@ def main():
                     if not tiles[row][col].flagged:
                         if tiles[row][col].mine:
                             GameOver(display)
+                            [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,first] = StartGame(difficulty)
                         else:
                             tiles[row][col].Dig(display)
                 elif mouse_presses[1]:
@@ -257,9 +343,9 @@ def main():
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     if tiles[row][col].covered:
                         flags = tiles[row][col].Flag(display,flags)
-        UpdateHeader(display)
         if CheckforWin(tiles):
-            GameWin(display)
+            GameWin(display,time)
+            [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,first] = StartGame(difficulty)
         pygame.display.update()
         clock.tick(60)
         subtime+=1

@@ -8,11 +8,10 @@ Hard Difficulty
 
 to do:
 
-add game over when mine is dug
 add difficulty menu that resets game if changed
-add game win handling
-add record keeping
+add record keeping(based on difficulty)
 add sounds
+
 
 
 completed: 
@@ -33,3 +32,7 @@ added quick digging by middle clicking tile that is fully flagged, that is the t
 added header displays for time and number of mines flagged
 colors updated
 fixed small bug with quick digging
+
+
+added game over
+added game win
