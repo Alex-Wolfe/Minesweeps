@@ -9,7 +9,6 @@ Hard Difficulty
 to do:
 
 add difficulty menu that resets game if changed
-add record keeping(based on difficulty)
 add sounds
 
 
@@ -36,3 +35,7 @@ fixed small bug with quick digging
 
 added game over
 added game win
+
+
+fixed bug where quick digging mines did not lose game
+added record keeping

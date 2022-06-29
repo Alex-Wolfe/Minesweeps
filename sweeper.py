@@ -47,6 +47,8 @@ def main():
                 rect = minemap[difficulty].get_rect()
                 rect.center = self.center
                 display.blit(minemap[difficulty],rect)
+                return True
+            return False
 
         def Flag(self,display,flags):
             if self.flagged:
@@ -65,8 +67,10 @@ def main():
             adjacent = getAdjacent(self,tiles)
             for tile in adjacent:
                 if not tile.flagged and tile.covered:
-                    tile.Dig(display)
-
+                    lost = tile.Dig(display)
+                    if lost:
+                        return True
+            return False
 
     # Define Functions
     def CreateWindow(windowsize):
@@ -176,9 +180,8 @@ def main():
         timerect = time.get_rect()
         timerect.center = (clockrect.center[0],clockrect.center[1]+50)
         display.blit(time,timerect)
-        recordfile = open('record.txt')
-        record = headerfont.render(str(recordfile.readline()),True,(0,0,0))
-        recordfile.close()
+        line = ReadRecord()
+        record = headerfont.render(line,True,(0,0,0))
         recordrect = record.get_rect()
         recordrect.center = (trophyrect.center[0],trophyrect.center[1]+50)
         display.blit(record,recordrect)
@@ -216,9 +219,11 @@ def main():
         timerect = timedis.get_rect()
         timerect.center = (clockrect.center[0],clockrect.center[1]+50)
         display.blit(timedis,timerect)
-        recordfile = open('record.txt')
-        record = headerfont.render(str(recordfile.readline()),True,(0,0,0))
-        recordfile.close()
+        line = ReadRecord()
+        if time < int(line):
+            WriteRecord(time)
+        line = ReadRecord()
+        record = headerfont.render(line,True,(0,0,0))
         recordrect = record.get_rect()
         recordrect.center = (trophyrect.center[0],trophyrect.center[1]+50)
         display.blit(record,recordrect)
@@ -241,6 +246,23 @@ def main():
                         pass
                     else:
                         pass
+    
+    def ReadRecord():
+        recordfile = open('record.txt')
+        lines = recordfile.readlines()
+        line = lines[recordline]
+        line = line.replace('\n','')
+        recordfile.close()
+        return line
+
+    def WriteRecord(time):
+        recordfile = open('record.txt','r+')
+        data = recordfile.readlines()
+        data[recordline] = str(time) + '\n'
+        recordfile.truncate(0)
+        recordfile.seek(0)
+        recordfile.writelines(data)
+        recordfile.close()
 
     # function used to reset game in case of loss, win, or difficulty change
     def StartGame(difficulty):
@@ -250,6 +272,8 @@ def main():
         tilesizemap = {'easy':40,'med':30,'hard':25} 
         numminesmap = {'easy':10,'med':40,'hard':99}
         boardarraymap = {'easy':[10,8],'med':[18,14],'hard':[24,20]}
+        recordmap = {'easy':0,'med':1,'hard':2}
+        recordline = recordmap[difficulty]
         nummines = numminesmap[difficulty]
         tilesize = tilesizemap[difficulty]
         boardarray = boardarraymap[difficulty]
@@ -261,7 +285,7 @@ def main():
         font = pygame.font.SysFont(None, fontmap[difficulty])
         subtime = 0
         time = 0
-        return [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,True]
+        return [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,True]
 
 
 
@@ -281,8 +305,8 @@ def main():
     restart = pygame.image.load('try_again.png')
     headerfont = pygame.font.SysFont(None,50)
     headerheight = 70
-    difficulty = 'easy'
-    [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,first] = StartGame(difficulty)
+    difficulty = 'med'
+    [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
     UpdateHeader(display)
 
     # Main game loop
@@ -324,11 +348,10 @@ def main():
                 if mouse_presses[0]:
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     if not tiles[row][col].flagged:
-                        if tiles[row][col].mine:
+                        lost = tiles[row][col].Dig(display)
+                        if lost:
                             GameOver(display)
-                            [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,first] = StartGame(difficulty)
-                        else:
-                            tiles[row][col].Dig(display)
+                            [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
                 elif mouse_presses[1]:
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     adjacenttiles = getAdjacent(tiles[row][col],tiles)
@@ -338,14 +361,17 @@ def main():
                             if tile.flagged:
                                 numadjflags+=1
                         if numadjflags == tiles[row][col].adjacentmines:
-                            tiles[row][col].QuickDig(display)
+                            lost = tiles[row][col].QuickDig(display)
+                            if lost:
+                                GameOver(display)
+                                [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
                 else:
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     if tiles[row][col].covered:
                         flags = tiles[row][col].Flag(display,flags)
         if CheckforWin(tiles):
             GameWin(display,time)
-            [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,first] = StartGame(difficulty)
+            [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
         pygame.display.update()
         clock.tick(60)
         subtime+=1
