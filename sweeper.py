@@ -24,7 +24,13 @@ def main():
             self.square = pygame.Rect(self.p1[0],self.p1[1],tilesize,tilesize)
             pygame.draw.rect(display,self.color,self.square)
 
-        def Dig(self,display):
+        def Dig(self,display,token):
+            if not self.covered:
+                return False
+            if token:
+                num = random.randint(0,2)
+                winsound.PlaySound(digmap[num],winsound.SND_ASYNC)
+                token = 0
             self.covered = False
             if (self.row + self.col) % 2:
                 color = (150,150,150)
@@ -42,7 +48,7 @@ def main():
                     adjacent = getAdjacent(self,tiles)
                     for tile in adjacent:
                         if tile.covered:
-                            tile.Dig(display)
+                            tile.Dig(display,0)
             else:
                 rect = minemap[difficulty].get_rect()
                 rect.center = self.center
@@ -52,10 +58,12 @@ def main():
 
         def Flag(self,display,flags):
             if self.flagged:
+                winsound.PlaySound('pop.wav',winsound.SND_ASYNC)
                 self.flagged = False
                 pygame.draw.rect(display,self.color,self.square)
                 flags+=1
             elif flags:
+                winsound.PlaySound('flag.wav',winsound.SND_ASYNC)
                 self.flagged = True
                 rect = flagmap[difficulty].get_rect()
                 rect.center = self.center
@@ -67,7 +75,7 @@ def main():
             adjacent = getAdjacent(self,tiles)
             for tile in adjacent:
                 if not tile.flagged and tile.covered:
-                    lost = tile.Dig(display)
+                    lost = tile.Dig(display,1)
                     if lost:
                         return True
             return False
@@ -90,7 +98,7 @@ def main():
             tiles.append(subtiles)
         return tiles
 
-    def UpdateHeader(display):
+    def UpdateHeader(display,difficulty):
         header = pygame.Rect(0,0,windowsize[0],headerheight)
         color = (76,153,0)
         pygame.draw.rect(display,color,header)
@@ -108,6 +116,12 @@ def main():
         timerect = timedis.get_rect()
         timerect.center = (clockrect.center[0]+55,clockrect.center[1])
         display.blit(timedis,timerect)
+        dif = diffont.render(difficulty,True,(0,0,0))
+        difrect = dif.get_rect()
+        difrect.left = 25
+        difrect.top = 25
+        display.blit(dif,difrect)
+        return difrect
         
     def GetClickCoords(x,y,tilesize):
         col = x//tilesize
@@ -163,10 +177,11 @@ def main():
         return True
 
     def GameOver(display):
+        winsound.PlaySound('kaboom.wav',winsound.SND_ASYNC)
         for set in tiles:
             for tile in set:
                 if tile.mine:
-                    tile.Dig(display)
+                    tile.Dig(display,0)
         bg = pygame.Rect(windowsize[0]/5,windowsize[1]/5,3*windowsize[0]/5,3*windowsize[1]/5)
         color = (76,153,0)
         pygame.draw.rect(display,color,bg)
@@ -222,6 +237,9 @@ def main():
         line = ReadRecord()
         if time < int(line):
             WriteRecord(time)
+            winsound.PlaySound('newrecord.wav',winsound.SND_ASYNC)
+        else:
+            winsound.PlaySound('win.wav',winsound.SND_ASYNC)
         line = ReadRecord()
         record = headerfont.render(line,True,(0,0,0))
         recordrect = record.get_rect()
@@ -260,6 +278,13 @@ def main():
         data = recordfile.readlines()
         data[recordline] = str(time) + '\n'
         recordfile.truncate(0)
+        recordfile.seek(0)
+        recordfile.writelines(data)
+        recordfile.close()
+    
+    def InitializeRecord():
+        recordfile = open('record.txt','w')
+        data = ['999\n','999\n','999']
         recordfile.seek(0)
         recordfile.writelines(data)
         recordfile.close()
@@ -304,14 +329,19 @@ def main():
     trophy = pygame.image.load('trophy.png')
     restart = pygame.image.load('try_again.png')
     headerfont = pygame.font.SysFont(None,50)
+    diffont = pygame.font.SysFont(None,30)
     headerheight = 70
-    difficulty = 'med'
+    digmap = {0:'dig_low.wav',1:'dig_mid.wav',2:'dig_hi.wav'}
+    difficultymap = {0:'easy',1:'med',2:'hard'}
+    difpointer = 0
+    difficulty = difficultymap[difpointer]
     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
-    UpdateHeader(display)
+    difrect = UpdateHeader(display,difficulty)
+    InitializeRecord()
 
     # Main game loop
     while True:
-        UpdateHeader(display)
+        UpdateHeader(display,difficulty)
         while first:
             # First while loop is for first click only, after which bombs are set and main game loop is entered
             for event in pygame.event.get():
@@ -320,22 +350,28 @@ def main():
                 if event.type == pygame.MOUSEBUTTONDOWN:
                     mouse_presses = pygame.mouse.get_pressed()
                     click = pygame.mouse.get_pos()
+                    if difrect.collidepoint(click):
+                        difpointer = (difpointer + 1) % 3
+                        [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
+                        difrect = UpdateHeader(display,difficulty)
                     if mouse_presses[0]:
                         [row,col] = GetClickCoords(click[0],click[1],tilesize)
-                        selected = tiles[row][col]
-                        SetBombs(nummines,tiles,selected)
-                        CalculateTileNumbers(tiles)
-                        selected.Dig(display)
-                        first = False
+                        if row >= 0:
+                            selected = tiles[row][col]
+                            SetBombs(nummines,tiles,selected)
+                            CalculateTileNumbers(tiles)
+                            selected.Dig(display,1)
+                            first = False
                     elif mouse_presses[1]:
                         pass
                     else:
                         [row,col] = GetClickCoords(click[0],click[1],tilesize)
-                        selected = tiles[row][col]
-                        SetBombs(nummines,tiles,selected)
-                        CalculateTileNumbers(tiles)
-                        selected.Dig(display)
-                        first = False
+                        if row >= 0:
+                            selected = tiles[row][col]
+                            SetBombs(nummines,tiles,selected)
+                            CalculateTileNumbers(tiles)
+                            selected.Dig(display,1)
+                            first = False
             pygame.display.update()
             clock.tick(60)
 
@@ -345,30 +381,37 @@ def main():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_presses = pygame.mouse.get_pressed()
                 click = pygame.mouse.get_pos()
+                if difrect.collidepoint(click):
+                    difpointer = (difpointer + 1) % 3
+                    [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
+                    difrect = UpdateHeader(display,difficulty)
                 if mouse_presses[0]:
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
-                    if not tiles[row][col].flagged:
-                        lost = tiles[row][col].Dig(display)
-                        if lost:
-                            GameOver(display)
-                            [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
-                elif mouse_presses[1]:
-                    [row,col] = GetClickCoords(click[0],click[1],tilesize)
-                    adjacenttiles = getAdjacent(tiles[row][col],tiles)
-                    numadjflags = 0
-                    if not tiles[row][col].covered:
-                        for tile in adjacenttiles:
-                            if tile.flagged:
-                                numadjflags+=1
-                        if numadjflags == tiles[row][col].adjacentmines:
-                            lost = tiles[row][col].QuickDig(display)
+                    if row >= 0:
+                        if not tiles[row][col].flagged:
+                            lost = tiles[row][col].Dig(display,1)
                             if lost:
                                 GameOver(display)
                                 [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
+                elif mouse_presses[1]:
+                    [row,col] = GetClickCoords(click[0],click[1],tilesize)
+                    if row >= 0:
+                        adjacenttiles = getAdjacent(tiles[row][col],tiles)
+                        numadjflags = 0
+                        if not tiles[row][col].covered:
+                            for tile in adjacenttiles:
+                                if tile.flagged:
+                                    numadjflags+=1
+                            if numadjflags == tiles[row][col].adjacentmines:
+                                lost = tiles[row][col].QuickDig(display)
+                                if lost:
+                                    GameOver(display)
+                                    [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
                 else:
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
-                    if tiles[row][col].covered:
-                        flags = tiles[row][col].Flag(display,flags)
+                    if row >= 0:
+                        if tiles[row][col].covered:
+                            flags = tiles[row][col].Flag(display,flags)
         if CheckforWin(tiles):
             GameWin(display,time)
             [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)

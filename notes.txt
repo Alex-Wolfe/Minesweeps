@@ -8,9 +8,6 @@ Hard Difficulty
 
 to do:
 
-add difficulty menu that resets game if changed
-add sounds
-
 
 
 completed: 
@@ -39,3 +36,9 @@ added game win
 
 fixed bug where quick digging mines did not lose game
 added record keeping
+
+records reset every time program is run
+fixed issue where clicking header dug tiles below
+added togglable difficulty
+added sounds
+created executable version
