@@ -1,6 +1,6 @@
 # Minesweeper Project 
 # Authored by Alex Wolfe on 6/18/2022
-
+# Contains several features like in game difficulty changing, quick digging and more
 
 import pygame
 import winsound
@@ -24,6 +24,9 @@ def main():
             self.square = pygame.Rect(self.p1[0],self.p1[1],tilesize,tilesize)
             pygame.draw.rect(display,self.color,self.square)
 
+        # Method which processes a tile being dug. Only allows tiles that are still covered to be dug
+        #   Only plays the dig sound once for each click. If a tile has no adjacent bombs, dig all adjacent tiles as well
+        #   Returns True if a bomb was dug, signaling a loss
         def Dig(self,display,token):
             if not self.covered:
                 return False
@@ -56,6 +59,8 @@ def main():
                 return True
             return False
 
+        # Method for flagging tiles. Flagged tiles can't be dug. If tile is already flagged, remove the flag.
+        #   The number of flags that can be placed is the number of bombs on the board
         def Flag(self,display,flags):
             if self.flagged:
                 winsound.PlaySound('pop.wav',winsound.SND_ASYNC)
@@ -71,6 +76,9 @@ def main():
                 flags-=1
             return flags
 
+        # Method for middle clicking tiles, where is the tile has the same amount of adjacent flagged tiles as it does adjacent mines,
+        # middle clicking will dig all the remaining adjacent tiles. This is a quicker way to dig when you have 'cleared' a tile by 
+        # completely flagging it
         def QuickDig(self,display):
             adjacent = getAdjacent(self,tiles)
             for tile in adjacent:
@@ -80,11 +88,15 @@ def main():
                         return True
             return False
 
+
     # Define Functions
+
+    # Creates the game window and returns the object
     def CreateWindow(windowsize):
         display = pygame.display.set_mode(windowsize)
         return display
 
+    # Creates the 2-D array of tiles. Alternates the color of tiles in a checkerboard pattern. 
     def CreateTiles(tilesize,boardarray,display):
         tiles = []
         for row in range(boardarray[1]):
@@ -98,6 +110,8 @@ def main():
             tiles.append(subtiles)
         return tiles
 
+    # Every tick through the loop, this function is called to update the game header which
+    #  includes the time, number of flags, difficulty, and images
     def UpdateHeader(display,difficulty):
         header = pygame.Rect(0,0,windowsize[0],headerheight)
         color = (76,153,0)
@@ -123,16 +137,22 @@ def main():
         display.blit(dif,difrect)
         return difrect
         
+    # Takes in x and y coordinates of a mouse click and returns the row and col of the tile that was clicked on the 2-D board
     def GetClickCoords(x,y,tilesize):
         col = x//tilesize
         row = (y-headerheight)//tilesize
         return [int(row),int(col)]
     
+    # Takes a 2-D array of tiles and randomly fills the board with the number of the mines that the current
+    # difficulty calls for.
+    # This method is called after the first click is made, so the board is filled with mines so that the first clicked tile
+    # is not a mine and all the adjacent tiles to the first clicked tile are not mines
     def SetBombs(numbombs,tiles,selected):
+        adjacents = getAdjacent(selected,tiles)
         while numbombs:
             col = random.randint(0,boardarray[0]-1)
             row = random.randint(0,boardarray[1]-1)
-            if tiles[row][col].mine or tiles[row][col] == selected or tiles[row][col] in getAdjacent(selected,tiles):
+            if tiles[row][col].mine or tiles[row][col] == selected or tiles[row][col] in adjacents:
                 continue
             tiles[row][col].mine = True
             numbombs-=1
@@ -160,6 +180,8 @@ def main():
             adjacent.append(tiles[row][col-1])
         return adjacent
 
+    # This function is called just after the mines are set on the board. This function calculates the number to be displayed
+    # on each tile, which represents the number of adjacent bombs to that tile
     def CalculateTileNumbers(tiles):
         for k in range(len(tiles)):
             for j in range(len(tiles[k])):
@@ -169,6 +191,7 @@ def main():
                 for tile in adjacent:
                     tile.adjacentmines+=1
 
+    # This function checks to see if the game has been won, called every tick through the game loop. Returns True is game is won
     def CheckforWin(tiles):
         for set in tiles:
             for tile in set:
@@ -176,6 +199,8 @@ def main():
                     return False
         return True
 
+    # This function is called when a mine has been dug and the game is lost. Creates screen which shows record time and prompts
+    # player to play again
     def GameOver(display):
         winsound.PlaySound('kaboom.wav',winsound.SND_ASYNC)
         for set in tiles:
@@ -220,6 +245,8 @@ def main():
                     else:
                         pass
 
+    # This function is called when the game has been won. Shows time acheived compared to record time. If record time has been beat, it 
+    # updates the record file to reflect that change. Prompts user to play again
     def GameWin(display,time):
         bg = pygame.Rect(windowsize[0]/5,windowsize[1]/5,3*windowsize[0]/5,3*windowsize[1]/5)
         color = (76,153,0)
@@ -265,6 +292,7 @@ def main():
                     else:
                         pass
     
+    # Reads the data from the record file, and returns the record time for the current difficulty only
     def ReadRecord():
         recordfile = open('record.txt')
         lines = recordfile.readlines()
@@ -273,6 +301,7 @@ def main():
         recordfile.close()
         return line
 
+    # This function called if record time was beaten. Updates the record file with the new time
     def WriteRecord(time):
         recordfile = open('record.txt','r+')
         data = recordfile.readlines()
@@ -282,6 +311,7 @@ def main():
         recordfile.writelines(data)
         recordfile.close()
     
+    # This function called when the program first starts, resets the records
     def InitializeRecord():
         recordfile = open('record.txt','w')
         data = ['999\n','999\n','999']
@@ -289,7 +319,7 @@ def main():
         recordfile.writelines(data)
         recordfile.close()
 
-    # function used to reset game in case of loss, win, or difficulty change
+    # This function used to reset game in case of loss, win, or difficulty change
     def StartGame(difficulty):
         fontmap = {'easy':48,'med':38,'hard':30}
         minemap = {'easy':mine_easy,'med':mine_med,'hard':mine_hard}
@@ -337,7 +367,7 @@ def main():
     difficulty = difficultymap[difpointer]
     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
     difrect = UpdateHeader(display,difficulty)
-    InitializeRecord()
+    # InitializeRecord()
 
     # Main game loop
     while True:
@@ -374,18 +404,20 @@ def main():
                             first = False
             pygame.display.update()
             clock.tick(60)
-
+        # Game loop for after first click
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
             if event.type == pygame.MOUSEBUTTONDOWN:
                 mouse_presses = pygame.mouse.get_pressed()
                 click = pygame.mouse.get_pos()
+                # Check for difficulty change
                 if difrect.collidepoint(click):
                     difpointer = (difpointer + 1) % 3
                     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
                     difrect = UpdateHeader(display,difficulty)
                 if mouse_presses[0]:
+                    # Handle left click
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     if row >= 0:
                         if not tiles[row][col].flagged:
@@ -394,6 +426,7 @@ def main():
                                 GameOver(display)
                                 [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
                 elif mouse_presses[1]:
+                    # Handle middle click
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     if row >= 0:
                         adjacenttiles = getAdjacent(tiles[row][col],tiles)
@@ -408,20 +441,22 @@ def main():
                                     GameOver(display)
                                     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
                 else:
+                    # Handle right click
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
                     if row >= 0:
                         if tiles[row][col].covered:
                             flags = tiles[row][col].Flag(display,flags)
+        # Check for game win
         if CheckforWin(tiles):
             GameWin(display,time)
             [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
         pygame.display.update()
+        # In game timer update
         clock.tick(60)
         subtime+=1
         if subtime == 60:
             subtime = 0
             time+=1
-
 
 
 
