@@ -321,13 +321,13 @@ def main():
 
     # This function used to reset game in case of loss, win, or difficulty change
     def StartGame(difficulty):
-        fontmap = {'easy':48,'med':38,'hard':30}
-        minemap = {'easy':mine_easy,'med':mine_med,'hard':mine_hard}
-        flagmap = {'easy':flag_easy,'med':flag_med,'hard':flag_hard}
-        tilesizemap = {'easy':40,'med':30,'hard':25} 
-        numminesmap = {'easy':10,'med':40,'hard':99}
-        boardarraymap = {'easy':[10,8],'med':[18,14],'hard':[24,20]}
-        recordmap = {'easy':0,'med':1,'hard':2}
+        fontmap = {'easy':48,'med':38,'hard':30,'extreme':30}
+        minemap = {'easy':mine_easy,'med':mine_med,'hard':mine_hard,'extreme':mine_hard}
+        flagmap = {'easy':flag_easy,'med':flag_med,'hard':flag_hard,'extreme':flag_hard}
+        tilesizemap = {'easy':40,'med':30,'hard':25,'extreme':25} 
+        numminesmap = {'easy':10,'med':40,'hard':99,'extreme':266}
+        boardarraymap = {'easy':[10,8],'med':[18,14],'hard':[24,20],'extreme':[60,28]}
+        recordmap = {'easy':0,'med':1,'hard':2,'extreme':3}
         recordline = recordmap[difficulty]
         nummines = numminesmap[difficulty]
         tilesize = tilesizemap[difficulty]
@@ -362,7 +362,7 @@ def main():
     diffont = pygame.font.SysFont(None,30)
     headerheight = 70
     digmap = {0:'dig_low.wav',1:'dig_mid.wav',2:'dig_hi.wav'}
-    difficultymap = {0:'easy',1:'med',2:'hard'}
+    difficultymap = {0:'easy',1:'med',2:'hard',3:'extreme'}
     difpointer = 0
     difficulty = difficultymap[difpointer]
     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
@@ -381,7 +381,7 @@ def main():
                     mouse_presses = pygame.mouse.get_pressed()
                     click = pygame.mouse.get_pos()
                     if difrect.collidepoint(click):
-                        difpointer = (difpointer + 1) % 3
+                        difpointer = (difpointer + 1) % 4
                         [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
                         difrect = UpdateHeader(display,difficulty)
                     if mouse_presses[0]:
@@ -413,7 +413,7 @@ def main():
                 click = pygame.mouse.get_pos()
                 # Check for difficulty change
                 if difrect.collidepoint(click):
-                    difpointer = (difpointer + 1) % 3
+                    difpointer = (difpointer + 1) % 4
                     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
                     difrect = UpdateHeader(display,difficulty)
                 if mouse_presses[0]:
