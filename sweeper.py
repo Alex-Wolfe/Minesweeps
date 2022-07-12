@@ -32,7 +32,8 @@ def main():
                 return False
             if token:
                 num = random.randint(0,2)
-                winsound.PlaySound(digmap[num],winsound.SND_ASYNC)
+                if volume:
+                    winsound.PlaySound(digmap[num],winsound.SND_ASYNC)
                 token = 0
             self.covered = False
             if (self.row + self.col) % 2:
@@ -63,12 +64,14 @@ def main():
         #   The number of flags that can be placed is the number of bombs on the board
         def Flag(self,display,flags):
             if self.flagged:
-                winsound.PlaySound('pop.wav',winsound.SND_ASYNC)
+                if volume:
+                    winsound.PlaySound('pop.wav',winsound.SND_ASYNC)
                 self.flagged = False
                 pygame.draw.rect(display,self.color,self.square)
                 flags+=1
             elif flags:
-                winsound.PlaySound('flag.wav',winsound.SND_ASYNC)
+                if volume:
+                    winsound.PlaySound('flag.wav',winsound.SND_ASYNC)
                 self.flagged = True
                 rect = flagmap[difficulty].get_rect()
                 rect.center = self.center
@@ -126,6 +129,9 @@ def main():
         clockrect = clock_img.get_rect()
         clockrect.center = (2*windowsize[0]/3, headerheight/2)
         display.blit(clock_img,clockrect)
+        speakerrect = speaker_img.get_rect()
+        speakerrect.center = (windowsize[0]-30, headerheight/2)
+        display.blit(speaker_img,speakerrect)
         timedis = headerfont.render(str(time),True,(0,0,0))
         timerect = timedis.get_rect()
         timerect.center = (clockrect.center[0]+55,clockrect.center[1])
@@ -135,7 +141,7 @@ def main():
         difrect.left = 25
         difrect.top = 25
         display.blit(dif,difrect)
-        return difrect
+        return difrect, speakerrect
         
     # Takes in x and y coordinates of a mouse click and returns the row and col of the tile that was clicked on the 2-D board
     def GetClickCoords(x,y,tilesize):
@@ -202,7 +208,8 @@ def main():
     # This function is called when a mine has been dug and the game is lost. Creates screen which shows record time and prompts
     # player to play again
     def GameOver(display):
-        winsound.PlaySound('kaboom.wav',winsound.SND_ASYNC)
+        if volume:
+            winsound.PlaySound('kaboom.wav',winsound.SND_ASYNC)
         for set in tiles:
             for tile in set:
                 if tile.mine:
@@ -264,9 +271,11 @@ def main():
         line = ReadRecord()
         if time < int(line):
             WriteRecord(time)
-            winsound.PlaySound('newrecord.wav',winsound.SND_ASYNC)
+            if volume:
+                winsound.PlaySound('newrecord.wav',winsound.SND_ASYNC)
         else:
-            winsound.PlaySound('win.wav',winsound.SND_ASYNC)
+            if volume:
+                winsound.PlaySound('win.wav',winsound.SND_ASYNC)
         line = ReadRecord()
         record = headerfont.render(line,True,(0,0,0))
         recordrect = record.get_rect()
@@ -356,6 +365,9 @@ def main():
     flag_hard = pygame.image.load('flag_hard.png')
     flag_header = pygame.image.load('flag_header.png')
     clock_img = pygame.image.load('clock.png')
+    speaker_on = pygame.image.load('speaker.png')
+    speaker_off = pygame.image.load('speaker_off.png')
+    speaker_img = speaker_on
     trophy = pygame.image.load('trophy.png')
     restart = pygame.image.load('try_again.png')
     headerfont = pygame.font.SysFont(None,50)
@@ -366,13 +378,15 @@ def main():
     difpointer = 0
     difficulty = difficultymap[difpointer]
     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficulty)
-    difrect = UpdateHeader(display,difficulty)
+    difrect,speakerrect = UpdateHeader(display,difficulty)
+    volume = True
     # InitializeRecord()
 
     # Main game loop
     while True:
         UpdateHeader(display,difficulty)
         while first:
+            UpdateHeader(display,difficulty)
             # First while loop is for first click only, after which bombs are set and main game loop is entered
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -384,6 +398,13 @@ def main():
                         difpointer = (difpointer + 1) % 4
                         [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
                         difrect = UpdateHeader(display,difficulty)
+                    if speakerrect.collidepoint(click):
+                        if volume:
+                            volume = False
+                            speaker_img = speaker_off
+                        else:
+                            volume = True
+                            speaker_img = speaker_on
                     if mouse_presses[0]:
                         [row,col] = GetClickCoords(click[0],click[1],tilesize)
                         if row >= 0:
@@ -416,6 +437,13 @@ def main():
                     difpointer = (difpointer + 1) % 4
                     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
                     difrect = UpdateHeader(display,difficulty)
+                if speakerrect.collidepoint(click):
+                    if volume:
+                        volume = False
+                        speaker_img = speaker_off
+                    else:
+                        volume = True
+                        speaker_img = speaker_on
                 if mouse_presses[0]:
                     # Handle left click
                     [row,col] = GetClickCoords(click[0],click[1],tilesize)
