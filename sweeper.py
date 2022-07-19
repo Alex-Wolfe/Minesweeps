@@ -397,7 +397,7 @@ def main():
                     if difrect.collidepoint(click):
                         difpointer = (difpointer + 1) % 4
                         [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
-                        difrect = UpdateHeader(display,difficulty)
+                        difrect,speakerrect = UpdateHeader(display,difficulty)
                     if speakerrect.collidepoint(click):
                         if volume:
                             volume = False
@@ -436,7 +436,7 @@ def main():
                 if difrect.collidepoint(click):
                     difpointer = (difpointer + 1) % 4
                     [tiles,display,clock,minemap,flagmap,flags,font,subtime,time,difficulty,windowsize,boardarray,tilesize,nummines,recordline,first] = StartGame(difficultymap[difpointer])
-                    difrect = UpdateHeader(display,difficulty)
+                    difrect,speakerrect = UpdateHeader(display,difficulty)
                 if speakerrect.collidepoint(click):
                     if volume:
                         volume = False
